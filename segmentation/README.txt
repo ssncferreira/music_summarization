@@ -1,2 +1,4 @@
-README 
-Information of segmentation
+README
+ 
+Segmentation:
+
