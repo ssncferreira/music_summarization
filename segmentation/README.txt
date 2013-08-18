@@ -1,0 +1,2 @@
+README 
+Information of segmentation
