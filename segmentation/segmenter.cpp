@@ -5,36 +5,141 @@
 using namespace std;
 using namespace Marsyas;
 
-void printInformation(MarSystem* net) {
-	cout << "net -> inSamples: " << net -> getctrl("mrs_natural/inSamples") -> to<mrs_natural>() << endl;
-	cout << "net -> onSamples: " << net -> getctrl("mrs_natural/onSamples") -> to<mrs_natural>() << endl;
-	cout << "net -> israte: " << net -> getctrl("mrs_real/israte") -> to<mrs_real>() << endl;
-	cout << "net -> osrate: " << net -> getctrl("mrs_real/osrate") -> to<mrs_real>() << endl;
-	cout << "##############################" << endl;
-	cout << "src -> inSamples: " << net -> getctrl("SoundFileSource/src/mrs_natural/inSamples") -> to<mrs_natural>() << endl;
-	cout << "src -> onSamples: " << net -> getctrl("SoundFileSource/src/mrs_natural/onSamples") -> to<mrs_natural>() << endl;
-	cout << "src -> israte: " << net -> getctrl("SoundFileSource/src/mrs_real/israte") -> to<mrs_real>() << endl;
-	cout << "src -> osrate: " << net -> getctrl("SoundFileSource/src/mrs_real/osrate") -> to<mrs_real>() << endl;
-	cout << "##############################" << endl;
+// Global variables - DELETE
+// in each position of 'reslt_vector' is a realvec, e.g.
+// in position 0 of result_vector is realvec processedData of second 0
+vector<realvec> result_vector;
+	
+	
+void print_information(MarSystem* net) {
+	cout << "net: " << endl;
+	cout << "	- inSamples: " << net -> getctrl("mrs_natural/inSamples") << endl;
+	cout << "	- israte: " << net -> getctrl("mrs_real/israte") << endl;
+	cout << "	- onSamples: " << net -> getctrl("mrs_natural/onSamples") << endl;
+	cout << "	- osrate: " << net -> getctrl("mrs_real/osrate") << endl << endl;
+
+	cout << "	src: " << endl;
+	cout << "		- size: " << net -> getctrl("SoundFileSource/src/mrs_natural/size") << endl;
+	cout << "		- inSamples: " << net -> getctrl("SoundFileSource/src/mrs_natural/inSamples") << endl;
+	cout << "		- israte: " << net -> getctrl("SoundFileSource/src/mrs_real/israte") << endl;
+	cout << "		- onSamples: " << net -> getctrl("SoundFileSource/src/mrs_natural/onSamples") << endl;
+	cout << "		- osrate: " << net -> getctrl("SoundFileSource/src/mrs_real/osrate") << endl << endl;
+	
+	cout << "	chroma: " << endl;
+	cout << "		- inSamples: " << net -> getctrl("Chroma/chroma/mrs_natural/inSamples") << endl;
+	cout << "		- israte: " << net -> getctrl("Chroma/chroma/mrs_real/israte") << endl;
+	cout << "		- onSamples: " << net -> getctrl("Chroma/chroma/mrs_natural/onSamples") << endl;
+	cout << "		- osrate: " << net -> getctrl("Chroma/chroma/mrs_real/osrate") << endl << endl;
+	
+	cout << "	arff: " << endl;
+	cout << "		- inSamples: " << net -> getctrl("ArffFileSink/arff/mrs_natural/inSamples") << endl;
+	cout << "		- israte: " << net -> getctrl("ArffFileSink/arff/mrs_real/israte") << endl;
+	cout << "		- onSamples: " << net -> getctrl("ArffFileSink/arff/mrs_natural/onSamples") << endl;
+	cout << "		- osrate: " << net -> getctrl("ArffFileSink/arff/mrs_real/osrate") << endl << endl;
+	
+	cout << "	g: " << endl;
+	cout << "		- inSamples: " << net -> getctrl("Gain/g/mrs_natural/inSamples") << endl;
+	cout << "		- israte: " << net -> getctrl("Gain/g/mrs_real/israte") << endl;
+	cout << "		- onSamples: " << net -> getctrl("Gain/g/mrs_natural/onSamples") << endl;
+	cout << "		- osrate: " << net -> getctrl("Gain/g/mrs_real/osrate") << endl << endl;
+}
+
+void print_result_vector() {
+	cout << "---------------RESULT VECTOR---------------" << endl;
+	
+	for(int i = 0; i < result_vector.size(); i++) {
+		cout << "result_vector[" << i << "]" << endl;
+		for(int x = 0; x < result_vector[i].getSize(); x++) {
+			cout << "	- " << x << " = " << result_vector[i].getValueFenced(x) << endl;
+		}
+	}
+	
+	cout << "---------------RESULT VECTOR---------------" << endl << endl;
+}
+
+void print_matrix(int vector_size) {
+	cout << "---------------MATRIX---------------" << endl;
+	
+	// every element of matrix matrix[i,j] represents the similarity between two onde-second
+	// segments of the piece at different times (euclidean distance is used)
+	mrs_real matrix[vector_size][vector_size];
+	
+	mrs_real result = 0;
+	mrs_real dot_product = 0;
+	mrs_real magnitude1 = 0;
+	mrs_real magnitude2 = 0;
+		
+	// Optimization: calculate only half-matrix, since the other half is equal
+	for(int rows = 0; rows < vector_size; rows++) {
+		for(int columns = 0; columns < vector_size; columns++) {
+			if(rows == columns) {
+				// optimization -> always equal to 0 in euclidean distance
+				// 1 in cosine distance
+				matrix[rows][columns] = 1;
+			}
+			else {
+				// Euclidean distance 
+				/*for(int x = 0; x < result_vector[rows].getSize(); x++) {
+					result += pow(result_vector[rows].getValueFenced(x) - 
+						result_vector[columns].getValueFenced(x), 2);
+				}
+				
+				matrix[rows][columns] = sqrt(result);*/
+				
+				// Cosine distance (similarity)
+				// resulting similarity ranges from -1 meaning exactly opposite,
+				// to 1 meaning exactly the same, 0 indicates independence
+				for(int x = 0; x < result_vector[rows].getSize(); x++) {
+					dot_product += result_vector[rows].getValueFenced(x) * 
+						result_vector[columns].getValueFenced(x);
+					magnitude1 += pow(result_vector[rows].getValueFenced(x),2);
+					magnitude2 += pow(result_vector[columns].getValueFenced(x),2);
+				}
+				magnitude1 = sqrt(magnitude1);
+				magnitude2 = sqrt(magnitude2);
+				magnitude1 = magnitude1*magnitude2;
+				
+				result = dot_product/magnitude1;
+
+				matrix[rows][columns] = result;
+			}
+			cout << matrix[rows][columns] << " ";
+			
+			result = 0;
+			magnitude1 = 0;
+			magnitude2 = 0;
+			dot_product = 0;
+		}
+		cout << endl;
+	}
+	
+	cout << "---------------MATRIX---------------" << endl << endl;
 }
 
 void segmenter(string sfName) {
 	MarSystemManager mng;
 	MarSystem* net = mng.create("Series", "net");
-
+	
 	net -> addMarSystem(mng.create("SoundFileSource", "src"));
 	net -> updctrl("SoundFileSource/src/mrs_string/filename", sfName);
-
-	net -> addMarSystem(mng.create("Spectrum","spc"));
 	
+	net -> addMarSystem(mng.create("Spectrum","spc"));
+
+/* Using spectrum - too high values at the end	
 	net -> addMarSystem(mng.create("PowerSpectrum", "ps"));
 	net -> updctrl("PowerSpectrum/ps/mrs_string/spectrumType", "magnitude");
-	
 	net -> addMarSystem(mng.create("Spectrum2Chroma", "s2c"));
+*/	
 	
-	net -> addMarSystem(mng.create("Gain", "g"));
-
-/* Test audio signal
+	net -> addMarSystem(mng.create("Chroma", "chroma"));
+	
+	net -> addMarSystem(mng.create("Gain", "g"));	// necessary to obtain concrete values
+	
+	// Creates an arff file to use .dat on gnuplot
+	net -> addMarSystem(mng.create("ArffFileSink", "arff"));
+	net -> updctrl("ArffFileSink/arff/mrs_string/filename", "result/result.arff");
+	
+/* Test audio signal - play filename
 	net -> addMarSystem(mng.create("AudioSink", "dest"));
 	net -> updctrl("AudioSink/dest/mrs_bool/initAudio", true);
 */
@@ -42,133 +147,52 @@ void segmenter(string sfName) {
 	// mrs_real/israte: rate (number of samples per second) of input
 	mrs_natural israte = net -> getctrl("mrs_real/israte") -> to<mrs_real>();
 	
-	// Associate each one-second segment window (israte/2) of the musical piece
-	// number of input samples in a tick must be equivalent at number of samples in a second (israte)
-	// divided by 2 (2 channels) -> wrong?
-	net -> updctrl("mrs_natural/inSamples", israte/2);
-
-	//printInformation(net);
+	// Associate each one-second segment window of the musical piece
+	// number of input samples must be equivalent at number of samples per second (israte)
+	// multiplied by 2 (2 channels) - NECESSARY the multiplicaiton???
+	net -> updctrl("mrs_natural/inSamples", israte*2);
+	
+	print_information(net);
 
 	int second = 0;
-	mrs_natural size = net -> getctrl("SoundFileSource/src/mrs_natural/size") -> to<mrs_natural>();
-	mrs_natural position = 0;
+	mrs_natural position = net -> getctrl("SoundFileSource/src/mrs_natural/pos") -> to<mrs_natural>();
+		
+	cout << "Initial position: " << position << endl << endl;
 	
-	// in each position of 'reslt_vector' is a realvec, e.g.
-	// in position 0 of result_vector is realvec processedData of second 0
-	vector<realvec> result_vector;
-
+	// print processedData
+	cout << "---------------PROCESSED DATA---------------" << endl;
 	
+	// processed data by Spectrum2Chroma
+	realvec processedData;
 	
 	while(net -> getctrl("SoundFileSource/src/mrs_bool/hasData") -> to<mrs_bool>()) {
 		net -> tick();
 		
 		position = net -> getctrl("SoundFileSource/src/mrs_natural/pos") -> to<mrs_natural>();
-		//cout << "src -> pos: " << position << endl;
 		
 		/*const - When const is used, instruction 'delete net;' results in segmentation
 		 * fault - necessary because processedData is of type const realvec& */ 
-		const realvec& processedData = 
-			net -> getctrl("Spectrum2Chroma/s2c/mrs_realvec/processedData") -> to<mrs_realvec>();
-		cout << "Spectrum2Chroma second " << second <<  " = " << processedData << endl;
+		processedData = net -> getctrl("Chroma/chroma/mrs_realvec/processedData") -> to<mrs_realvec>();
+		cout << "ChromaFilter second " << second <<  " position " << position << " = " << processedData << endl;
 		
 		result_vector.push_back(processedData);
 		
-		/*
-		cout << "Size: " << processedData.getSize() << ": " << endl;
-		cout << "Columns: " << processedData.getCols() << ": " << endl;
-		cout << "Rows: " << processedData.getRows() << ": " << endl;
-		*/
-		// Usage of euclidean distance
-		//mrs_real result = 0;
-		
-		
-		
-		// processedData values at index i (1 column and 12 rows)
-		//for(i = 0; i < processedData.getSize(); i++) {
-			//cout << "	-posicao " << i << ": " << processedData.getValueFenced(i) << endl;
-			// euclidean distance between 2 equal vectors -> must be 0 
-			//result += pow(processedData.getValueFenced(i) - processedData.getValueFenced(i), 2);
-		//}
-
-		// square root of 'result'
-		//result = sqrt(result);
-		//cout << "final result: " << result << endl;
 		second++;
-		/*
-		if (second == 2)
-			break;*/
+		
+		// end after 5º second - test only
+		/*if(second == 4) {
+			break;
+		}*/
 	}
+	
+	cout << "---------------PROCESSED DATA---------------" << endl << endl;
 	
 	// print result_vector
-	/*for(int i = 0; i < result_vector.size(); i++) {
-		cout << "result_vector[" << i << "]" << endl;
-		for(int x = 0; x < result_vector[i].getSize(); x++) {
-			cout << "	- " << x << " = " << result_vector[i].getValueFenced(x) << endl;
-		}
-	}*/
+	//print_result_vector();
 	
-	int vector_size = result_vector.size();
-	cout << "vector_size: " << vector_size << endl;
+	// calculate and print matrix 
+	print_matrix(result_vector.size());
 	
-	// every element of matrix matrix[i,j] represents the similarity between two onde-second
-	// segments of the piece at different times (euclidean distance is used)
-	mrs_real matrix[vector_size][vector_size];
-	
-	
-	// print matrix
-	// calculate matrix
-	cout << "  |";
-	for(int i = 0; i < vector_size; i++) {
-		cout << i << "|";
-	}
-	cout << endl << "---";
-	for(int j = 0; j < vector_size*2; j++) {
-		cout << "-";
-	}
-	cout << endl;
-			
-			
-	mrs_real result = 0;
-		
-	for(int rows = 0; rows < vector_size; rows++) {
-		if(rows < 10) {
-			cout << rows << " |";
-		}
-		else {
-			cout << rows << "|";
-		}
-		for(int columns = 0; columns < vector_size; columns++) {
-			if(rows == columns) {
-				// optimization -> always equal to 0
-				matrix[rows][columns] = 0.0;
-			}
-			else {
-			
-				// Euclidean distance 
-				for(int x = 0; x < result_vector[rows].getSize(); x++) {
-					result += pow(result_vector[rows].getValueFenced(x) - 
-						result_vector[columns].getValueFenced(x), 2);
-				}
-				
-				matrix[rows][columns] = sqrt(result);
-			}
-			cout << matrix[rows][columns];
-			
-			if(columns < 10) {
-				cout << "|";
-			}
-			else {
-				cout << " |";
-			}
-		}
-		cout << endl;
-	}
-	
-	
-	if(position < size) {
-		cout << "ERROR: information lost..." << endl;
-	}
-
 	//delete net;	// Segmentation fault (see instruction 'const realvec& processedData = ...)'
 }
 

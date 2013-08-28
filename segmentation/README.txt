@@ -1,6 +1,11 @@
 README
- 
-Marsyas (Music Analysis, Retrieval and Synthesis for Audio Signals) is used in the code presented in this folder
+
+CHANGES:
+	- segmenter.pro: in MARSYAS_INSTALL_DIR change to src/marsyas/ in 
+	  Marsyas package depending on the segmenter.cpp file location
+
+Marsyas (Music Analysis, Retrieval and Synthesis for Audio Signals) is 
+used in the code presented in this folder
 
 DONE: chroma features in matrix 1:12
 

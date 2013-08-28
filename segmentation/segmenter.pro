@@ -5,15 +5,15 @@ SOURCES = segmenter.cpp
 
 ### if running inside the source tree
 ### adjust as necessary
-MARSYAS_INSTALL_DIR = ../../
-INCLUDEPATH += $$MARSYAS_INSTALL_DIR/src/marsyas/
-LIBPATH += $$MARSYAS_INSTALL_DIR/build/lib/
+#MARSYAS_INSTALL_DIR = ../../
+#INCLUDEPATH += $$MARSYAS_INSTALL_DIR/src/marsyas/
+#LIBPATH += $$MARSYAS_INSTALL_DIR/build/lib/
 
 ### if installed elsewhere
-#MARSYAS_INSTALL_DIR = /usr/local
-#MARSYAS_INSTALL_DIR = ${HOME}/usr/
-#INCLUDEPATH += $$MARSYAS_INSTALL_DIR/marsyas/
-#LIBPATH += $$MARSYAS_INSTALL_DIR/lib/
+#CHANGE - src/marsyas/ in Marsyas package depending on this file location
+MARSYAS_INSTALL_DIR = ../../../Programs/Marsyas/marsyas-0.4.8/
+INCLUDEPATH += $$MARSYAS_INSTALL_DIR/src/marsyas/
+LIBPATH += $$MARSYAS_INSTALL_DIR/build/lib/
 
 ### basic OS stuff: do not change!
 #win32-msvc2005:LIBS += marsyas.lib
