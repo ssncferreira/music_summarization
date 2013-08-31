@@ -1,6 +1,8 @@
 #include "MarSystemManager.h"
 #include <math.h>		// mathematical operations (sqrt, pow,...)
 #include <vector>
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 using namespace Marsyas;
@@ -10,7 +12,30 @@ using namespace Marsyas;
 // in position 0 of result_vector is realvec processedData of second 0
 vector<realvec> result_vector;
 	
+// Name of file to process
+string filename_matrix;
 	
+// filename_matrix has format result/filename_matrix.dat
+void create_filename_matrix(string file_location) {
+	// flag: true if symbol '/' is found, false otherwise
+	bool folder = false;
+
+	// iterate string until '.' (format type) is found
+	for(string::iterator it = file_location.begin(); *it != '.'; ++it) {
+		if(folder == true) {
+			filename_matrix.push_back(*it);
+		}
+		if(*it == '/') {
+			folder = true;
+			filename_matrix.clear();
+		}
+	}
+	
+	filename_matrix.insert(0, "result/");
+	
+	filename_matrix.append("_matrix.dat");
+}
+
 void print_information(MarSystem* net) {
 	cout << "net: " << endl;
 	cout << "	- inSamples: " << net -> getctrl("mrs_natural/inSamples") << endl;
@@ -57,9 +82,15 @@ void print_result_vector() {
 	cout << "---------------RESULT VECTOR---------------" << endl << endl;
 }
 
+// print matrix at filename_matrix
 void print_matrix(int vector_size) {
-	cout << "---------------MATRIX---------------" << endl;
+	//cout << "---------------MATRIX---------------" << endl;
 	
+	cout << "Creating file " << filename_matrix << "..." << endl;
+	
+	ofstream matrix_file;
+	matrix_file.open(filename_matrix.c_str());
+
 	// every element of matrix matrix[i,j] represents the similarity between two onde-second
 	// segments of the piece at different times (euclidean distance is used)
 	mrs_real matrix[vector_size][vector_size];
@@ -103,17 +134,18 @@ void print_matrix(int vector_size) {
 
 				matrix[rows][columns] = result;
 			}
-			cout << matrix[rows][columns] << " ";
+			matrix_file << matrix[rows][columns] << " ";
 			
 			result = 0;
 			magnitude1 = 0;
 			magnitude2 = 0;
 			dot_product = 0;
 		}
-		cout << endl;
+		matrix_file << endl;
 	}
 	
-	cout << "---------------MATRIX---------------" << endl << endl;
+	matrix_file.close();
+	//cout << "---------------MATRIX---------------" << endl << endl;
 }
 
 void segmenter(string sfName) {
@@ -124,20 +156,14 @@ void segmenter(string sfName) {
 	net -> updctrl("SoundFileSource/src/mrs_string/filename", sfName);
 	
 	net -> addMarSystem(mng.create("Spectrum","spc"));
-
-/* Using spectrum - too high values at the end	
-	net -> addMarSystem(mng.create("PowerSpectrum", "ps"));
-	net -> updctrl("PowerSpectrum/ps/mrs_string/spectrumType", "magnitude");
-	net -> addMarSystem(mng.create("Spectrum2Chroma", "s2c"));
-*/	
 	
 	net -> addMarSystem(mng.create("Chroma", "chroma"));
 	
 	net -> addMarSystem(mng.create("Gain", "g"));	// necessary to obtain concrete values
 	
 	// Creates an arff file to use .dat on gnuplot
-	net -> addMarSystem(mng.create("ArffFileSink", "arff"));
-	net -> updctrl("ArffFileSink/arff/mrs_string/filename", "result/result.arff");
+	//net -> addMarSystem(mng.create("ArffFileSink", "arff"));
+	//net -> updctrl("ArffFileSink/arff/mrs_string/filename", "result/result.arff");
 	
 /* Test audio signal - play filename
 	net -> addMarSystem(mng.create("AudioSink", "dest"));
@@ -149,18 +175,18 @@ void segmenter(string sfName) {
 	
 	// Associate each one-second segment window of the musical piece
 	// number of input samples must be equivalent at number of samples per second (israte)
-	// multiplied by 2 (2 channels) - NECESSARY the multiplicaiton???
+	// multiplied by 2 (2 channels) - NECESSARY the multiplicaiton??? Yes, see self similarity matrix
 	net -> updctrl("mrs_natural/inSamples", israte*2);
 	
-	print_information(net);
+	//print_information(net);
 
 	int second = 0;
 	mrs_natural position = net -> getctrl("SoundFileSource/src/mrs_natural/pos") -> to<mrs_natural>();
 		
-	cout << "Initial position: " << position << endl << endl;
+	//cout << "Initial position: " << position << endl << endl;
 	
 	// print processedData
-	cout << "---------------PROCESSED DATA---------------" << endl;
+	//cout << "---------------PROCESSED DATA---------------" << endl;
 	
 	// processed data by Spectrum2Chroma
 	realvec processedData;
@@ -173,7 +199,7 @@ void segmenter(string sfName) {
 		/*const - When const is used, instruction 'delete net;' results in segmentation
 		 * fault - necessary because processedData is of type const realvec& */ 
 		processedData = net -> getctrl("Chroma/chroma/mrs_realvec/processedData") -> to<mrs_realvec>();
-		cout << "ChromaFilter second " << second <<  " position " << position << " = " << processedData << endl;
+		//cout << "ChromaFilter second " << second <<  " position " << position << " = " << processedData << endl;
 		
 		result_vector.push_back(processedData);
 		
@@ -185,7 +211,7 @@ void segmenter(string sfName) {
 		}*/
 	}
 	
-	cout << "---------------PROCESSED DATA---------------" << endl << endl;
+	//cout << "---------------PROCESSED DATA---------------" << endl << endl;
 	
 	// print result_vector
 	//print_result_vector();
@@ -197,17 +223,19 @@ void segmenter(string sfName) {
 }
 
 int main(int argc, const char **argv) {
-	string fileName;
+	string file_location;
 	
 	if (argc < 2) {
 		cout << "Please enter a filename to segment." << endl;
 		exit(1);
 	}
 	else {
-		fileName = argv[1];
+		file_location = argv[1];
 	}
+
+	create_filename_matrix(file_location);
 	
-	segmenter(fileName);
+	segmenter(file_location);
 	exit(0);
 }
 
