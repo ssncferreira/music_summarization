@@ -36,7 +36,7 @@ void create_filename_matrix(string file_location) {
 
 	filename_matrix.insert(0, "result/");
 
-	filename_matrix.append("_matrix.dat");
+	filename_matrix.append("_matrix.pgm");
 }
 
 
@@ -68,7 +68,7 @@ void print_matrix(int vector_size) {
 	mrs_real magnitude2 = 0;
 	
 	matrix_file << "P2" << endl << matrix_size << " " << matrix_size << endl;
-	matrix_file << "20" << endl;
+	matrix_file << "5000" << endl;
 	
 	// Optimization: calculate only half-matrix, since the other half is equal
 	for(int rows = 0; rows < vector_size; rows++) {
@@ -104,7 +104,7 @@ void print_matrix(int vector_size) {
 				// y = y0 + (y1 - y0) * (x - x0) / (x1 - x0)
 				// changing scale from -1 1 to 0 20
 				// 200 - x to invert color scale
-				result = 20 - (20*(dot_product/magnitude1+1) / 2);
+				result = 5000 - (5000*(dot_product/magnitude1+1) / 2);
 
 				//matrix[rows][columns] = result;
 			}
