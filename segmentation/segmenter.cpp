@@ -104,9 +104,15 @@ void print_matrix(int vector_size) {
 				// y = y0 + (y1 - y0) * (x - x0) / (x1 - x0)
 				// changing scale from -1 1 to 0 20
 				// 200 - x to invert color scale
-				result = 5000 - (5000*(dot_product/magnitude1+1) / 2);
+				result = 5000 - (5000*((dot_product/magnitude1)+1) / 2);
 
 				//matrix[rows][columns] = result;
+			}
+			
+		
+			
+			if(result < 0) {
+				result = 0;
 			}
 			
 			//matrix_file << matrix[rows][columns] << " ";
